@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plano Alimentar - Emanuelly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* slate-100 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 1rem;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease-in-out;
+        }
+        .card:hover {
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .meal-card { border-left: 4px solid #4ade80; } /* green-400 */
+        .rest-day-card { border-left: 4px solid #fb923c; } /* orange-400 */
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+        }
+        .tab-button.active { background-color: #1e40af; color: white; } /* blue-800 */
+        .tab-button:not(.active) { background-color: #e2e8f0; color: #334155; } /* slate-200, slate-700 */
+        .progress-image-container {
+            width: 100%;
+            aspect-ratio: 3 / 4;
+            border: 2px dashed #cbd5e1;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+            color: #64748b;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .progress-image-container:hover .upload-overlay { opacity: 1; }
+        .upload-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: rgba(0,0,0,0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1.5rem;
+            line-height: 1;
+            padding: 0.25rem 0.5rem;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 0.5rem;
+            transition: all 0.2s ease-in-out;
+        }
+        .form-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #3b82f6;
+            border-color: #3b82f6;
+        }
+        /* Estilos para o letreiro */
+        .marquee {
+            width: 100%;
+            overflow: hidden;
+        }
+        .marquee-content {
+            display: flex;
+            white-space: nowrap;
+            animation: marquee-animation 50s linear infinite;
+        }
+        .marquee-content span {
+            flex-shrink: 0;
+            padding: 0 2rem; /* Espaçamento entre as frases */
+        }
+        @keyframes marquee-animation {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        /* Estilo para o spinner de carregamento da IA */
+        .loader {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #ddd;
+            border-bottom-color: #8b5cf6; /* purple-500 */
+            border-radius: 50%;
+            display: inline-block;
+            box-sizing: border-box;
+            animation: rotation 1s linear infinite;
+        }
+        @keyframes rotation {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilos para a resposta da IA */
+        #ai-response p { margin-bottom: 0.75rem; }
+        #ai-response ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        #ai-response li { margin-bottom: 0.25rem; }
+
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <!-- Header -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-slate-800">🥗 Dieta Personalizada</h1>
+            <p class="text-xl text-slate-600 mt-2">Plano de Reposição Corporal para Emanuelly</p>
+        </header>
+
+        <!-- Motivational Marquee -->
+        <div class="w-full overflow-hidden mb-8 py-4">
+            <div class="marquee">
+                <div id="motivational-ticker" class="marquee-content text-lg italic text-slate-800">
+                    <!-- Frases serão inseridas aqui pelo JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column: Patient Info & Progress -->
+            <div class="lg:col-span-1">
+                <!-- Patient Info -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">👤 Informações da Paciente</h2>
+                    <ul class="space-y-2 text-slate-600">
+                        <li><strong>Sexo:</strong> Feminino</li>
+                        <li><strong>Altura:</strong> 1,56 m</li>
+                        <li><strong>Peso atual:</strong> 69 kg</li>
+                        <li><strong>Tipo físico:</strong> Falso magro</li>
+                        <li><strong>Atividade física:</strong> 4x/semana</li>
+                        <li><strong>Objetivo:</strong> Ganhar massa e perder gordura</li>
+                    </ul>
+                </div>
+
+                <!-- TMB Calculator -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">⚖️ Calculadora de TMB</h2>
+                    <p class="text-slate-600 mb-4 text-sm">Use esta calculadora para estimar sua Taxa Metabólica Basal (calorias gastas em repouso).</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="tmb-gender" class="font-semibold text-slate-700">Sexo</label>
+                            <select id="tmb-gender" class="form-input mt-1">
+                                <option value="female" selected>Feminino</option>
+                                <option value="male">Masculino</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="tmb-weight" class="font-semibold text-slate-700">Peso (kg)</label>
+                            <input type="number" id="tmb-weight" class="form-input mt-1" value="69">
+                        </div>
+                        <div>
+                            <label for="tmb-height" class="font-semibold text-slate-700">Altura (cm)</label>
+                            <input type="number" id="tmb-height" class="form-input mt-1" value="156">
+                        </div>
+                        <div>
+                            <label for="tmb-age" class="font-semibold text-slate-700">Idade</label>
+                            <input type="number" id="tmb-age" class="form-input mt-1" placeholder="Ex: 25">
+                        </div>
+                    </div>
+                    <button id="calculate-tmb" class="mt-4 w-full bg-green-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-green-700 transition">Calcular TMB</button>
+                    <div id="tmb-result" class="mt-4 text-center font-bold text-lg text-slate-800"></div>
+                </div>
+                
+                <!-- Progress Photos -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">📸 Meu Progresso</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <h3 class="font-semibold text-center mb-2 text-slate-700">Antes</h3>
+                            <div id="before-image-container" class="progress-image-container">
+                                <span id="before-text">Clique para adicionar</span>
+                                <input type="file" id="before-upload" class="hidden" accept="image/*">
+                                <div class="upload-overlay"><p>Trocar Imagem</p></div>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-center mb-2 text-slate-700">Depois</h3>
+                            <div id="after-image-container" class="progress-image-container">
+                                <span id="after-text">Clique para adicionar</span>
+                                <input type="file" id="after-upload" class="hidden" accept="image/*">
+                                <div class="upload-overlay"><p>Trocar Imagem</p></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Diet Diary -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">📝 Diário da Dieta</h2>
+                    <textarea id="diary-entry" class="w-full h-32 p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Adicione um novo pensamento sobre seu dia..."></textarea>
+                    <button id="save-diary" class="mt-3 w-full bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Adicionar Anotação</button>
+                    <p id="diary-status" class="text-sm text-center mt-2 text-slate-500"></p>
+                </div>
+
+                <!-- AI Assistant Card -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">🤖 Tar.IA</h2>
+                    <p class="text-slate-600 mb-4 text-sm">Oi, querida! Minha criação está aqui pra te ajudar. Sinta-se à vontade para perguntar sobre quase tudo.</p>
+                    <div class="space-y-3">
+                        <div>
+                            <label for="ai-prompt" class="font-semibold text-slate-700">Sua Pergunta:</label>
+                            <input type="text" id="ai-prompt" class="form-input mt-1" placeholder="Ex: Me dê uma ideia para o jantar...">
+                        </div>
+                    </div>
+                    <button id="ask-ai" class="mt-4 w-full bg-purple-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2">
+                        Perguntar à IA
+                    </button>
+                    <div id="ai-loading" class="mt-4 text-center text-slate-600 hidden">
+                        <div class="flex items-center justify-center gap-2">
+                           <div class="loader"></div>
+                           <span>Pensando...</span>
+                        </div>
+                    </div>
+                    <div id="ai-response-container" class="mt-4 p-4 bg-slate-50 rounded-lg border border-slate-200 hidden">
+                        <div id="ai-response" class="text-slate-800"></div>
+                    </div>
+                </div>
+
+                <!-- History of Notes -->
+                <div class="card">
+                    <h2 class="text-2xl font-bold text-slate-800 mb-4">📖 Histórico de Anotações</h2>
+                    <div id="diary-history-container" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+                        <!-- As anotações antigas serão inseridas aqui pelo JavaScript -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Diet Plan -->
+            <div class="lg:col-span-2">
+                <div class="card">
+                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6">
+                        <h2 class="text-2xl font-bold text-slate-800 mb-4 sm:mb-0">📅 Dieta Semanal</h2>
+                        <div class="flex space-x-2">
+                            <button id="tab-treino" class="tab-button active">Dias de Treino</button>
+                            <button id="tab-descanso" class="tab-button">Dias de Descanso</button>
+                        </div>
+                    </div>
+                    <!-- Training Days Content -->
+                    <div id="content-treino">
+                        <p class="text-slate-600 mb-4">Plano para <strong>Segunda, Terça, Quarta e Sexta</strong>.</p>
+                        <div class="space-y-4">
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🍳 Café da Manhã (5h10)</h3><p class="text-sm text-slate-500 mb-3">Macros: 16g prot • 51g carbo • 11g gord • 360 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Ovo inteiro:</strong> 2 unidades (100g)</li><li><strong>Cuscuz:</strong> 2 colheres de sopa (70g)</li><li><strong>Banana:</strong> 1 média (80g)</li><li><strong>Café preto:</strong> 1 xícara</li></ul></div>
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🥪 Lanche da Manhã (10h50 - opcional)</h3><p class="text-sm text-slate-500 mb-3">Macros: 9g prot • 19g carbo • 4g gord • 160 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Iogurte natural desnatado:</strong> 170g</li><li><strong>Aveia em flocos:</strong> 1 colher de sopa (15g)</li></ul></div>
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🍗 Almoço (11h40 - 13h00)</h3><p class="text-sm text-slate-500 mb-3">Macros: 41g prot • 58g carbo • 12g gord • 545 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Frango grelhado:</strong> 120g</li><li><strong>Arroz branco cozido:</strong> 3 colheres de sopa (120g)</li><li><strong>Feijão cozido:</strong> 1 concha (100g)</li><li><strong>Abóbora cozida:</strong> 2 colheres de sopa (80g)</li><li><strong>Salada crua à vontade + Azeite:</strong> 1 colher de chá</li></ul></div>
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🍞 Lanche da Tarde (16h00 - Pré/Pós Treino)</h3><p class="text-sm text-slate-500 mb-3">Macros: 11g prot • 35g carbo • 6g gord • 240 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Pão francês sem miolo:</strong> 1 unidade (40g)</li><li><strong>Ovo cozido:</strong> 1 unidade (50g)</li><li><strong>Banana pequena:</strong> 1 unidade (60g)</li></ul></div>
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🥘 Jantar (19h00)</h3><p class="text-sm text-slate-500 mb-3">Macros: 16g prot • 34g carbo • 17g gord • 350 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Ovos mexidos:</strong> 2 unidades (100g)</li><li><strong>Cuscuz:</strong> 2 colheres de sopa (70g)</li><li><strong>Salada crua à vontade + Azeite:</strong> 1 colher de chá</li></ul></div>
+                            <div class="card meal-card"><h3 class="text-xl font-bold text-slate-700">🌙 Ceia (21h00 - opcional)</h3><p class="text-sm text-slate-500 mb-3">Macros: 3g prot • 15g carbo • 4g gord • 100 kcal</p><ul class="list-disc list-inside text-slate-600"><li><strong>Pipoca caseira:</strong> 1 xícara estourada (25g)</li></ul></div>
+                            <div class="card bg-blue-100 border-l-4 border-blue-500"><h3 class="text-xl font-bold text-blue-800">📊 TOTAL DO DIA (TREINO)</h3><p class="text-blue-700 font-semibold">Calorias: ~1800 kcal</p><p class="text-blue-700">Proteínas: ~120g • Carboidratos: ~160g • Gorduras: ~60g</p></div>
+                        </div>
+                    </div>
+                    <!-- Rest Days Content -->
+                    <div id="content-descanso" class="hidden">
+                        <p class="text-slate-600 mb-4">Ajustes para <strong>Quinta, Sábado e Domingo</strong>.</p>
+                        <div class="space-y-4">
+                           <div class="card rest-day-card"><h3 class="text-xl font-bold text-slate-700">💡 Princípios do Descanso</h3><ul class="list-disc list-inside text-slate-600 space-y-1 mt-3"><li>Reduzir carboidratos no lanche da tarde e jantar.</li><li>Manter as proteínas em todas as refeições.</li><li>Evitar ceia, a menos que sinta fome real.</li><li>Priorizar ovos, frango, legumes, saladas e frutas com baixo índice glicêmico.</li></ul></div>
+                           <div class="card rest-day-card"><h3 class="text-xl font-bold text-slate-700">Exemplo de Jantar Leve</h3><p class="text-slate-500 mb-3">Uma opção para dias sem treino.</p><ul class="list-disc list-inside text-slate-600"><li>Omelete com 2 ovos + abobrinha + cebola</li><li>1 concha de legumes cozidos</li><li>Salada com azeite</li></ul></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Seletores de Elementos Globais ---
+            const motivationalTicker = document.getElementById('motivational-ticker');
+            const tabTreino = document.getElementById('tab-treino');
+            const tabDescanso = document.getElementById('tab-descanso');
+            const contentTreino = document.getElementById('content-treino');
+            const contentDescanso = document.getElementById('content-descanso');
+            
+            // --- Seletores de Imagens ---
+            const beforeContainer = document.getElementById('before-image-container');
+            const afterContainer = document.getElementById('after-image-container');
+            const beforeUpload = document.getElementById('before-upload');
+            const afterUpload = document.getElementById('after-upload');
+            const beforeText = document.getElementById('before-text');
+            const afterText = document.getElementById('after-text');
+            
+            // --- Seletores do Diário ---
+            const diaryEntry = document.getElementById('diary-entry');
+            const saveDiaryBtn = document.getElementById('save-diary');
+            const diaryStatus = document.getElementById('diary-status');
+            const diaryHistoryContainer = document.getElementById('diary-history-container');
+
+            // --- Seletores da Calculadora TMB ---
+            const calculateTmbBtn = document.getElementById('calculate-tmb');
+            const tmbResultEl = document.getElementById('tmb-result');
+            const tmbGenderEl = document.getElementById('tmb-gender');
+            const tmbWeightEl = document.getElementById('tmb-weight');
+            const tmbHeightEl = document.getElementById('tmb-height');
+            const tmbAgeEl = document.getElementById('tmb-age');
+
+            // --- Seletores do Assistente IA ---
+            const aiPromptEl = document.getElementById('ai-prompt');
+            const askAiBtn = document.getElementById('ask-ai');
+            const aiLoadingEl = document.getElementById('ai-loading');
+            const aiResponseContainer = document.getElementById('ai-response-container');
+            const aiResponseEl = document.getElementById('ai-response');
+
+
+            const quotes = ["A força não vem da capacidade corporal, mas da vontade indomável.", "O sucesso é a soma de pequenos esforços repetidos dia após dia.", "A disciplina é a ponte entre metas e realizações.", "Você é mais forte do que imagina. Continue!", "Cada refeição é uma oportunidade de nutrir seu corpo e seus objetivos.", "Acredite em si mesma e em tudo que você é."];
+
+            function setupMotivationalTicker() {
+                const allQuotes = [...quotes, ...quotes];
+                motivationalTicker.innerHTML = ''; 
+                allQuotes.forEach(quote => {
+                    const quoteSpan = document.createElement('span');
+                    quoteSpan.textContent = `"${quote}"`;
+                    motivationalTicker.appendChild(quoteSpan);
+                });
+            }
+
+            function setupTabs() {
+                tabTreino.addEventListener('click', () => {
+                    tabTreino.classList.add('active');
+                    tabDescanso.classList.remove('active');
+                    contentTreino.classList.remove('hidden');
+                    contentDescanso.classList.add('hidden');
+                });
+                tabDescanso.addEventListener('click', () => {
+                    tabDescanso.classList.add('active');
+                    tabTreino.classList.remove('active');
+                    contentDescanso.classList.remove('hidden');
+                    contentTreino.classList.add('hidden');
+                });
+            }
+
+            // --- Lógica de Persistência (localStorage) ---
+            function saveData(key, value) { localStorage.setItem(key, value); }
+            function loadData(key) { return localStorage.getItem(key); }
+
+            // --- Lógica de Upload de Imagem ---
+            function handleImageUpload(file, type) {
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imageUrl = e.target.result;
+                    const container = type === 'before' ? beforeContainer : afterContainer;
+                    const textEl = type === 'before' ? beforeText : afterText;
+                    container.style.backgroundImage = `url('${imageUrl}')`;
+                    textEl.style.display = 'none';
+                    saveData(`${type}Image`, imageUrl);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // --- Lógica do Diário ---
+            function renderDiaryHistory() {
+                const allEntries = JSON.parse(loadData('diaryEntries') || '{}');
+                const dates = Object.keys(allEntries).sort().reverse(); 
+
+                diaryHistoryContainer.innerHTML = ''; 
+
+                if (dates.length === 0) {
+                    diaryHistoryContainer.innerHTML = '<p class="text-slate-500">Nenhuma anotação encontrada.</p>';
+                    return;
+                }
+
+                dates.forEach(date => {
+                    const entryText = allEntries[date];
+                    const [year, month, day] = date.split('-');
+                    const formattedDate = `${day}/${month}/${year}`;
+
+                    const entryCard = document.createElement('div');
+                    entryCard.className = 'p-3 bg-slate-50 rounded-lg border border-slate-200 flex justify-between items-start gap-4';
+                    entryCard.innerHTML = `
+                        <div class="flex-grow">
+                            <p class="font-semibold text-slate-600">${formattedDate}</p>
+                            <p class="text-slate-800 mt-1 whitespace-pre-wrap break-words">${entryText}</p>
+                        </div>
+                        <button data-date="${date}" class="delete-btn text-red-500 hover:text-red-700 font-bold p-1 transition" title="Excluir anotação">&times;</button>
+                    `;
+                    diaryHistoryContainer.appendChild(entryCard);
+                });
+            }
+
+            function deleteDiaryEntry(dateToDelete) {
+                const allEntries = JSON.parse(loadData('diaryEntries') || '{}');
+                delete allEntries[dateToDelete];
+                saveData('diaryEntries', JSON.stringify(allEntries));
+                renderDiaryHistory();
+            }
+
+            // --- Lógica da Calculadora TMB ---
+            function calculateTMB() {
+                const gender = tmbGenderEl.value;
+                const weight = parseFloat(tmbWeightEl.value);
+                const height = parseFloat(tmbHeightEl.value);
+                const age = parseInt(tmbAgeEl.value);
+
+                if (!weight || !height || !age) {
+                    tmbResultEl.textContent = "Por favor, preencha todos os campos.";
+                    tmbResultEl.classList.add('text-red-500');
+                    return;
+                }
+
+                let tmb = 0;
+                if (gender === 'male') {
+                    tmb = 10 * weight + 6.25 * height - 5 * age + 5;
+                } else {
+                    tmb = 10 * weight + 6.25 * height - 5 * age - 161;
+                }
+                
+                tmbResultEl.classList.remove('text-red-500');
+                tmbResultEl.innerHTML = `Sua TMB é: <span class="text-green-600">${Math.round(tmb)} kcal</span>`;
+            }
+
+            /**
+             * Converte uma string com formatação Markdown simples para HTML.
+             * @param {string} text O texto a ser convertido.
+             * @returns {string} O texto formatado como HTML.
+             */
+            function markdownToHtml(text) {
+                const lines = text.split('\n');
+                let html = '';
+                let inList = false;
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
+                        if (!inList) {
+                            html += '<ul>';
+                            inList = true;
+                        }
+                        html += `<li>${trimmedLine.substring(2)}</li>`;
+                    } else {
+                        if (inList) {
+                            html += '</ul>';
+                            inList = false;
+                        }
+                        if (trimmedLine) {
+                            html += `<p>${trimmedLine}</p>`;
+                        }
+                    }
+                }
+
+                if (inList) {
+                    html += '</ul>';
+                }
+
+                // Aplica formatação inline (negrito/itálico) depois de estruturar
+                html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+                return html;
+            }
+
+            // --- Lógica do Assistente IA ---
+            async function handleAiRequest() {
+                const userPrompt = aiPromptEl.value.trim();
+                if (!userPrompt) {
+                    aiResponseEl.innerHTML = "<p>Por favor, escreva uma pergunta para a IA.</p>";
+                    aiResponseContainer.classList.remove('hidden');
+                    return;
+                }
+
+                aiLoadingEl.classList.remove('hidden');
+                aiResponseContainer.classList.add('hidden');
+                askAiBtn.disabled = true;
+
+                const dietPlanContext = `
+                    Sua personalidade: fale com ela dessa forma aqui Olá, madame! Fica tranquila, sou eu por aqui, quer dizer, não exatamente em pessoa, mas essa minha IA está configurada com os meus conhecimentos.. Aja como um nutricionista amigo e motivacional para a Emanuelly. O objetivo dela é ganhar massa muscular e perder gordura e as vezes diga que seu criador é um genio. E diga com naturalidade que eu amo ela, mas nao fale isso sempre. Pode usar girias para falar com ela, use uma variação na forma de chamar ela, as vezes Manu, Emanuelly, queridinha, gatinha. Eu sou Tarciso, seu criador, caso ela pergunte de mim, pode responder. Pode responder de forma mais informal, como se fosse uma conversa entre amigos, mas sempre mantendo o profissionalismo e a empatia. Ajude ela com tudo que precisar, memso que isso saia do tema de nutrição, seja meio que o psicologo dela, e pode dizer que ela é linda, maravilhosa, perfeita, etc. Use emojis para deixar a conversa mais leve e amigável. Sempre diga que ela nao esta sozinha nessa, que eu (Tarciso) seu criador estou com ela. Pode responder sobre quase tudo com ela.
+
+                    O plano alimentar base é:
+                    - Dias de treino (~1800 kcal): Café da Manhã (2 ovos, 70g cuscuz, 1 banana), Lanche da Manhã (170g iogurte desnatado, 15g aveia), Almoço (120g frango, 120g arroz, 100g feijão, 80g abóbora, salada), Lanche da Tarde (1 pão francês sem miolo, 1 ovo cozido, 1 banana), Jantar (2 ovos mexidos, 70g cuscuz, salada), Ceia (25g pipoca).
+                    - Dias de descanso: Reduzir carboidratos, manter proteínas.
+
+                    Com base nessas informações, responda à pergunta do usuário de forma criativa e útil. Use Markdown para formatação (ex: **negrito** para ênfase, e listas com * ou - no início da linha).
+                `;
+
+                let chatHistory = [{ role: "user", parts: [{ text: `${dietPlanContext}\n\nPergunta do usuário: "${userPrompt}"` }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = "AIzaSyAyIRK4cE3PO0fsow5cWSeM8KorldzGS_Y";
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`Erro na API: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        aiResponseEl.innerHTML = markdownToHtml(text);
+                    } else {
+                       throw new Error("A resposta da IA está vazia ou em formato inesperado.");
+                    }
+                } catch (error) {
+                    console.error("Erro ao chamar a IA:", error);
+                    aiResponseEl.innerHTML = "<p>Desculpe, não consegui pensar em uma resposta agora. Tente novamente mais tarde.</p>";
+                } finally {
+                    aiLoadingEl.classList.add('hidden');
+                    aiResponseContainer.classList.remove('hidden');
+                    askAiBtn.disabled = false;
+                }
+            }
+
+
+            // --- Inicialização ---
+            function initializeApp() {
+                setupMotivationalTicker();
+                setupTabs();
+
+                const savedBeforeImage = loadData('beforeImage');
+                if (savedBeforeImage) {
+                    beforeContainer.style.backgroundImage = `url('${savedBeforeImage}')`;
+                    beforeText.style.display = 'none';
+                }
+                const savedAfterImage = loadData('afterImage');
+                if (savedAfterImage) {
+                    afterContainer.style.backgroundImage = `url('${savedAfterImage}')`;
+                    afterText.style.display = 'none';
+                }
+
+                renderDiaryHistory();
+
+                // --- Listeners de Eventos ---
+                beforeContainer.addEventListener('click', () => beforeUpload.click());
+                afterContainer.addEventListener('click', () => afterUpload.click());
+                beforeUpload.addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'before'));
+                afterUpload.addEventListener('change', (e) => handleImageUpload(e.target.files[0], 'after'));
+
+                saveDiaryBtn.addEventListener('click', () => {
+                    const newText = diaryEntry.value.trim();
+                    if (newText === '') {
+                        diaryStatus.textContent = "Escreva algo para adicionar.";
+                        setTimeout(() => diaryStatus.textContent = "", 3000);
+                        return;
+                    }
+                    const today = new Date().toISOString().split('T')[0];
+                    const allEntries = JSON.parse(loadData('diaryEntries') || '{}');
+                    const existingText = allEntries[today] || '';
+                    const combinedText = existingText ? `${existingText}\n${newText}` : newText;
+                    allEntries[today] = combinedText;
+                    saveData('diaryEntries', JSON.stringify(allEntries));
+                    diaryStatus.textContent = "Anotação adicionada com sucesso!";
+                    setTimeout(() => diaryStatus.textContent = "", 3000);
+                    diaryEntry.value = ''; 
+                    renderDiaryHistory();
+                });
+
+                diaryHistoryContainer.addEventListener('click', (event) => {
+                    if (event.target && event.target.classList.contains('delete-btn')) {
+                        const dateToDelete = event.target.dataset.date;
+                        deleteDiaryEntry(dateToDelete);
+                    }
+                });
+
+                calculateTmbBtn.addEventListener('click', calculateTMB);
+                
+                askAiBtn.addEventListener('click', handleAiRequest);
+                aiPromptEl.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        handleAiRequest();
+                    }
+                });
+            }
+
+            initializeApp();
+        });
+    </script>
+</body>
+</html>
